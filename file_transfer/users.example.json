@@ -1,0 +1,16 @@
+{
+  "admin": {
+    "password_hash": "scrypt:32768:8:1$NQEww87nY6QcPL70$726b69ff05069290dd401f5334cf98f0d4561e3d2ecadfb5183f1c1c048032031a452d3d75243bffe0f3939c2a7049509811293b3facec690c10627064e141a1",
+    "role": "admin",
+    "roots": [
+      "/data/shared"
+    ]
+  },
+  "guest": {
+    "password_hash": "scrypt:32768:8:1$lBpDIapCI1gNfckp$4beedc68c5b21174986f49e90b4644152dace833cd2ea172c030d99440d9a18143b79770cc2b49efe473db47590cb1ddf7c3b6a7ac1f3b4fed5efe285334772e",
+    "role": "viewer",
+    "roots": [
+      "/data/shared/public"
+    ]
+  }
+}

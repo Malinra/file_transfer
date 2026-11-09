@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>❄ 杀生丸 · 文件传送屋 ❄</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --ice: #2f7fd4;
+    --ice-deep: #1f6fd0;
+    --silver: #2a4a73;
+    --glow: #7fc8ff;
+    --ink: #223a5e;
+    --card: rgba(255, 255, 255, 0.72);
+    --line: rgba(74, 168, 255, 0.28);
+  }
+  body {
+    margin: 0;
+    font: 14px/1.6 "PingFang SC", "Noto Sans CJK SC", -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.35), rgba(220, 238, 255, 0.45)),
+      url('/static/bg.png') center / cover no-repeat fixed,
+      linear-gradient(135deg, #e8f3ff, #d4e9ff 50%, #e6f0ff);
+  }
+  /* 飘落的雪花 */
+  .snow { position: fixed; top: -20px; color: #ffffff; pointer-events: none; z-index: 1; text-shadow: 0 0 6px rgba(74,168,255,.9); animation: fall linear infinite; }
+  @keyframes fall {
+    0% { transform: translateY(-20px) translateX(0) rotate(0deg); }
+    100% { transform: translateY(105vh) translateX(40px) rotate(360deg); }
+  }
+  header {
+    position: relative; z-index: 5;
+    background: linear-gradient(120deg, rgba(47, 127, 212, 0.92), rgba(127, 200, 255, 0.85));
+    padding: 14px 22px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    box-shadow: 0 4px 24px rgba(74, 168, 255, 0.3);
+    color: #fff; backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { font-weight: 800; font-size: 17px; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 8px rgba(31,111,208,.6); margin-right: 6px; }
+  #crumbs { flex: 1; min-width: 200px; background: rgba(255,255,255,.3); padding: 6px 12px; border-radius: 20px; backdrop-filter: blur(6px); }
+  #crumbs a { color: #fff; cursor: pointer; font-weight: 600; text-decoration: none; }
+  #crumbs a:hover { text-decoration: underline; }
+  #crumbs span.sep { color: rgba(255,255,255,.7); margin: 0 4px; }
+  button {
+    border: none; background: rgba(255,255,255,.9); color: var(--ice-deep);
+    padding: 7px 15px; border-radius: 22px; cursor: pointer; font-weight: 700;
+    font-size: 13px; transition: transform .15s, box-shadow .15s, background .15s;
+    box-shadow: 0 2px 8px rgba(74, 168, 255, 0.18);
+  }
+  button:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 6px 16px rgba(74, 168, 255, 0.4); background: #fff; }
+  button:active { transform: translateY(0) scale(.98); }
+  main { position: relative; z-index: 5; max-width: 940px; margin: 24px auto; padding: 0 16px; }
+  #drop {
+    border: 2.5px dashed var(--ice-deep); border-radius: 22px; padding: 34px; text-align: center;
+    background: var(--card); color: var(--ink); cursor: pointer; backdrop-filter: blur(12px);
+    transition: all .2s; box-shadow: 0 8px 36px rgba(10, 20, 48, 0.5);
+  }
+  #drop:hover { border-color: var(--glow); box-shadow: 0 0 28px rgba(74,168,255,.4); }
+  body.dragging #drop, #drop.over {
+    border-color: var(--glow); background: rgba(30, 60, 110, 0.7);
+    color: #fff; transform: scale(1.01);
+    box-shadow: 0 0 40px rgba(127, 200, 255, 0.6);
+  }
+  #dropTarget { color: var(--ice); text-shadow: 0 0 8px var(--glow); }
+  .card {
+    background: var(--card); border-radius: 22px; margin-top: 18px; overflow: hidden;
+    border: 1px solid var(--line); backdrop-filter: blur(12px);
+    box-shadow: 0 8px 36px rgba(10, 20, 48, 0.5);
+  }
+  .row { display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--line); gap: 10px; transition: background .15s; }
+  .row:last-child { border-bottom: 0; }
+  .row.dir { cursor: pointer; }
+  .row.dir:hover { background: rgba(127, 200, 255, 0.12); }
+  .row.dir.over { background: rgba(74, 168, 255, 0.28); outline: 2px solid var(--glow); outline-offset: -2px; }
+  .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .meta { color: #6d85ab; font-size: 12px; }
+  .bar { width: 160px; height: 10px; background: rgba(74,168,255,.15); border-radius: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--ice-deep), var(--glow)); transition: width .2s; box-shadow: 0 0 8px var(--glow); }
+  .ok i { background: linear-gradient(90deg, #4ad1c0, #38c172); }
+  .err i { background: linear-gradient(90deg, #ff7a9a, #dc2626); }
+  .err .meta { color: #ff9aa8; }
+  h3 {
+    margin: 0; padding: 12px 16px; font-size: 14px; font-weight: 800; color: var(--silver);
+    background: linear-gradient(120deg, rgba(74,168,255,.14), rgba(127,200,255,.08));
+    border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;
+  }
+  label.ow { font-weight: 600; font-size: 12px; color: var(--silver); }
+  .empty { padding: 22px; color: #8aa0c0; text-align: center; }
+  #rootbar {
+    position: relative; z-index: 5;
+    background: rgba(255, 255, 255, 0.6); padding: 10px 22px; border-bottom: 1px solid var(--line);
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap; backdrop-filter: blur(8px); color: var(--silver);
+  }
+  #rootbar span, #rootbar small { color: var(--silver) !important; }
+  select { padding: 7px 12px; border: 1.5px solid var(--ice-deep); border-radius: 20px; background: #fff; color: var(--ink); font-weight: 600; cursor: pointer; }
+  option { background: #fff; color: var(--ink); }
+  input[type=text], #loginUser, #loginPass { font-family: inherit; }
+  input:focus, select:focus { outline: 2px solid var(--ice-deep); outline-offset: 1px; }
+</style>
+</head>
+<body>
+<div id="loginMask" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:linear-gradient(rgba(255,255,255,.3),rgba(220,238,255,.5)),url('/static/bg.png') center/cover no-repeat,linear-gradient(135deg,#e8f3ff,#d4e9ff);">
+  <div style="background:rgba(255,255,255,.78);padding:38px 32px;border-radius:26px;border:1px solid rgba(74,168,255,.35);width:340px;box-shadow:0 20px 50px rgba(74,168,255,.3);backdrop-filter:blur(14px);text-align:center;color:#223a5e;">
+    <div style="font-size:44px;line-height:1;margin-bottom:6px;text-shadow:0 0 16px #7fc8ff;">❄</div>
+    <h2 style="margin:0 0 4px;font-size:20px;color:#1f6fd0;font-weight:800;">杀生丸 · 传送屋</h2>
+    <p style="margin:0 0 22px;color:#5a76a0;font-size:13px;">「这点程度，也敢挡在我面前」请登录</p>
+    <input id="loginUser" placeholder="账号" autocomplete="username" style="width:100%;padding:12px 14px;margin-bottom:12px;border:1.5px solid rgba(74,168,255,.5);border-radius:16px;background:#fff;color:#223a5e;">
+    <input id="loginPass" type="password" placeholder="密码" autocomplete="current-password" style="width:100%;padding:12px 14px;margin-bottom:18px;border:1.5px solid rgba(74,168,255,.5);border-radius:16px;background:#fff;color:#223a5e;">
+    <button id="loginBtn" style="width:100%;padding:12px;background:linear-gradient(120deg,#1f6fd0,#7fc8ff);color:#fff;border:none;border-radius:18px;font-size:16px;font-weight:800;box-shadow:0 6px 22px rgba(74,168,255,.5);">登 录 ❄</button>
+    <div id="loginErr" style="color:#dc2626;margin-top:12px;font-size:13px;min-height:18px;"></div>
+  </div>
+</div>
+<header>
+  <span class="brand">❄ 犬夜叉·传送屋</span>
+  <button id="up">↑ 上级</button>
+  <div id="crumbs"></div>
+  <button id="mkdir">＋ 新建目录</button>
+  <button id="pickFolder">📁 选择文件夹</button>
+  <button id="refresh">🔄 刷新</button>
+  <span id="whoami" style="color:#e8f2ff;font-size:13px;font-weight:600;"></span>
+  <button id="logout">退出</button>
+</header>
+<div id="rootbar">
+  <span>起始根目录：</span>
+  <select id="rootSelect"></select>
+  <button id="applyRoot" title="跳回所选根目录（上传请直接在下方进入目标文件夹后拖拽）">跳到根目录</button>
+  <small>提示：进入某个文件夹后，直接拖拽即可上传到该文件夹，无需此按钮</small>
+</div>
+<main>
+  <div id="drop">❄ 把文件或文件夹拖到这里，上传到 <b id="dropTarget">当前目录</b> ❄<br>
+    <small>或点击选择文件；也可以直接拖到下方某个目录行上，上传到该目录</small></div>
+  <input id="fileInput" type="file" multiple hidden>
+  <input id="folderInput" type="file" webkitdirectory hidden>
+
+  <div class="card" id="queueCard" hidden>
+    <h3><span>上传队列</span><label class="ow"><input type="checkbox" id="overwrite"> 覆盖同名文件</label></h3>
+    <div id="queue"></div>
+  </div>
+
+  <div class="card">
+    <h3><span>当前目录内容</span></h3>
+    <div id="list"></div>
+  </div>
+</main>
+
+<script>
+let token = localStorage.getItem('token') || '';
+let cur = '';
+let root = localStorage.getItem('root') || '';
+let role = 'viewer';
+
+const $ = id => document.getElementById(id);
+const join = (a, b) => [a, b].filter(Boolean).join('/');
+
+function showLogin(msg) {
+  $('loginMask').style.display = 'flex';
+  $('loginErr').textContent = msg || '';
+}
+function hideLogin() { $('loginMask').style.display = 'none'; }
+
+async function doLogin() {
+  const username = $('loginUser').value.trim();
+  const password = $('loginPass').value;
+  if (!username || !password) { $('loginErr').textContent = '请输入账号和密码'; return; }
+  const r = await fetch('/api/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const d = await r.json();
+  if (!r.ok) { $('loginErr').textContent = d.error || '登录失败'; return; }
+  token = d.token; role = d.role;
+  localStorage.setItem('token', token);
+  hideLogin();
+  afterLogin(d);
+}
+
+function afterLogin(d) {
+  $('whoami').textContent = `${d.username}（${d.role === 'admin' ? '管理员·可写' : '只读'}）`;
+  // 只读账号隐藏上传相关控件
+  const writable = d.role === 'admin';
+  $('mkdir').style.display = writable ? '' : 'none';
+  $('pickFolder').style.display = writable ? '' : 'none';
+  $('drop').style.display = writable ? '' : 'none';
+  loadRoots();
+  load('');
+}
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), 'X-Token': token } });
+  if (r.status === 401) { token = ''; localStorage.removeItem('token'); showLogin('会话已过期，请重新登录'); throw new Error('未登录'); }
+  return r;
+}
+
+function fmtSize(n) {
+  if (n < 1024) return n + ' B';
+  const u = ['KB', 'MB', 'GB', 'TB'];
+  let i = -1;
+  do { n /= 1024; i++; } while (n >= 1024 && i < 3);
+  return n.toFixed(1) + ' ' + u[i];
+}
+
+async function load(path = cur) {
+  const r = await api('/api/list?path=' + encodeURIComponent(path) + '&root=' + encodeURIComponent(root));
+  const d = await r.json();
+  if (!r.ok) { alert(d.error); return; }
+  cur = d.path;
+  if (d.root) { root = d.root; localStorage.setItem('root', root); }
+  const fullTarget = cur ? (root.replace(/\/$/, '') + '/' + cur) : root;
+  const dt = $('dropTarget');
+  if (dt) dt.textContent = fullTarget;
+  renderCrumbs();
+  const list = $('list');
+  list.replaceChildren();
+  if (!d.dirs.length && !d.files.length) {
+    list.innerHTML = '<div class="empty">空目录</div>';
+  }
+  for (const x of d.dirs) {
+    const row = document.createElement('div');
+    row.className = 'row dir';
+    row.innerHTML = '<span>🗂️</span><span class="name"></span>';
+    row.querySelector('.name').textContent = x.name;
+    row.onclick = () => load(join(cur, x.name));
+    row.ondragover = e => { e.preventDefault(); e.stopPropagation(); row.classList.add('over'); };
+    row.ondragleave = () => row.classList.remove('over');
+    row.ondrop = e => { e.preventDefault(); e.stopPropagation(); row.classList.remove('over'); handleDrop(e, join(cur, x.name)); };
+    list.appendChild(row);
+  }
+  for (const x of d.files) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = '<span>📜</span><span class="name"></span><span class="meta"></span>';
+    row.querySelector('.name').textContent = x.name;
+    row.querySelector('.meta').textContent = fmtSize(x.size) + '  ' + new Date(x.mtime * 1000).toLocaleString();
+    list.appendChild(row);
+  }
+}
+
+function renderCrumbs() {
+  const c = $('crumbs');
+  c.replaceChildren();
+  const add = (text, path) => {
+    const a = document.createElement('a');
+    a.textContent = text;
+    a.onclick = () => load(path);
+    c.appendChild(a);
+  };
+  add('根目录', '');
+  let acc = '';
+  for (const p of cur.split('/').filter(Boolean)) {
+    const s = document.createElement('span'); s.className = 'sep'; s.textContent = '/'; c.appendChild(s);
+    acc = join(acc, p);
+    add(p, acc);
+  }
+}
+
+$('up').onclick = () => load(cur.split('/').slice(0, -1).join('/'));
+$('refresh').onclick = () => load();
+$('mkdir').onclick = async () => {
+  const name = prompt('新目录名（可用 a/b/c 一次创建多级）');
+  if (!name) return;
+  const r = await api('/api/mkdir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: cur, name, root }) });
+  const d = await r.json();
+  if (!r.ok) alert(d.error);
+  load();
+};
+
+// ---------- 上传队列 ----------
+const queue = [];
+let active = 0;
+const MAX = 3;
+
+function enqueue(file, rel, target) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = '<span class="name"></span><span class="meta">等待</span><div class="bar"><i></i></div>';
+  row.querySelector('.name').textContent = join(target, rel);
+  $('queue').prepend(row);
+  $('queueCard').hidden = false;
+  queue.push({ file, rel, target, row });
+  pump();
+}
+
+function pump() {
+  while (active < MAX && queue.length) {
+    const t = queue.shift();
+    active++;
+    send(t).finally(() => { active--; pump(); if (!active && !queue.length) load(); });
+  }
+}
+
+function send({ file, rel, target, row }) {
+  return new Promise(resolve => {
+    const meta = row.querySelector('.meta'), bar = row.querySelector('i');
+    const fd = new FormData();
+    fd.append('path', target);
+    fd.append('relpath', rel);
+    fd.append('overwrite', $('overwrite').checked ? '1' : '0');
+    fd.append('root', root);
+    fd.append('file', file);
+    const x = new XMLHttpRequest();
+    x.open('POST', '/api/upload');
+    x.setRequestHeader('X-Token', token);
+    x.upload.onprogress = e => {
+      if (!e.lengthComputable) return;
+      const p = e.loaded / e.total * 100;
+      bar.style.width = p + '%';
+      meta.textContent = p.toFixed(0) + '%';
+    };
+    x.onload = () => {
+      if (x.status === 200) { row.classList.add('ok'); bar.style.width = '100%'; meta.textContent = '完成'; }
+      else {
+        row.classList.add('err');
+        let msg = '失败';
+        try { msg = JSON.parse(x.responseText).error; } catch {}
+        if (x.status === 401) { msg = '会话已过期'; token=''; localStorage.removeItem('token'); showLogin('会话已过期，请重新登录'); }
+        meta.textContent = msg;
+      }
+      resolve();
+    };
+    x.onerror = () => { row.classList.add('err'); meta.textContent = '网络错误'; resolve(); };
+    meta.textContent = '0%';
+    x.send(fd);
+  });
+}
+
+// ---------- 拖拽 / 选择 ----------
+const readEntries = r => new Promise((res, rej) => r.readEntries(res, rej));
+const getFile = e => new Promise((res, rej) => e.file(res, rej));
+
+async function walk(entry, prefix, out) {
+  if (entry.isFile) {
+    out.files.push({ file: await getFile(entry), rel: prefix + entry.name });
+  } else if (entry.isDirectory) {
+    const dirPath = prefix + entry.name;
+    out.dirs.push(dirPath);
+    const reader = entry.createReader();
+    let batch;
+    while ((batch = await readEntries(reader)).length) {
+      for (const e of batch) await walk(e, dirPath + '/', out);
+    }
+  }
+}
+
+async function handleDrop(e, target = cur) {
+  const entries = [...e.dataTransfer.items].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  const out = { files: [], dirs: [] };
+  for (const en of entries) await walk(en, '', out);
+  for (const d of out.dirs) {
+    await api('/api/mkdir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: target, name: d, root }) });
+  }
+  for (const f of out.files) enqueue(f.file, f.rel, target);
+  if (!out.files.length) load();
+}
+
+let dragDepth = 0;
+addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); });
+addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => {
+  e.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove('dragging');
+  handleDrop(e);
+});
+
+$('drop').onclick = () => $('fileInput').click();
+$('pickFolder').onclick = () => $('folderInput').click();
+$('fileInput').onchange = e => {
+  for (const f of e.target.files) enqueue(f, f.name, cur);
+  e.target.value = '';
+};
+$('folderInput').onchange = e => {
+  for (const f of e.target.files) enqueue(f, f.webkitRelativePath || f.name, cur);
+  e.target.value = '';
+};
+
+// ---------- 根目录选择 ----------
+async function loadRoots() {
+  try {
+    const r = await api('/api/roots');
+    const d = await r.json();
+    if (!r.ok) return;
+    const sel = $('rootSelect');
+    sel.replaceChildren();
+    for (const p of d.roots) {
+      const o = document.createElement('option');
+      o.value = p; o.textContent = p;
+      sel.appendChild(o);
+    }
+    if (root && d.roots.includes(root)) sel.value = root;
+    else if (d.roots.length) { root = d.roots[0]; sel.value = root; }
+  } catch {}
+}
+
+$('applyRoot').onclick = () => {
+  const v = $('rootSelect').value;
+  if (!v) { alert('请选择目录'); return; }
+  root = v;
+  localStorage.setItem('root', root);
+  cur = '';
+  load('');
+};
+
+// ---------- 登录相关事件 ----------
+$('loginBtn').onclick = doLogin;
+$('loginPass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+$('logout').onclick = async () => {
+  try { await api('/api/logout', { method: 'POST' }); } catch {}
+  token = ''; localStorage.removeItem('token');
+  showLogin('已退出');
+};
+
+// ---------- 飘落的雪花 ----------
+(function spawnSnow() {
+  const flakes = ['❄', '❅', '❆', '•', '✦'];
+  setInterval(() => {
+    const s = document.createElement('div');
+    s.className = 'snow';
+    s.textContent = flakes[Math.floor(Math.random() * flakes.length)];
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.fontSize = (8 + Math.random() * 16) + 'px';
+    s.style.animationDuration = (7 + Math.random() * 8) + 's';
+    s.style.opacity = 0.4 + Math.random() * 0.6;
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 15000);
+  }, 400);
+})();
+
+// ---------- 启动：校验已有会话 ----------
+(async () => {
+  if (token) {
+    try {
+      const r = await fetch('/api/me', { headers: { 'X-Token': token } });
+      if (r.ok) { const d = await r.json(); hideLogin(); afterLogin(d); return; }
+    } catch {}
+  }
+  showLogin();
+})();</script>
+</body>
+</html>

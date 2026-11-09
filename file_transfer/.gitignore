@@ -1,0 +1,15 @@
+# ==========================================
+# File Transfer 忽略规则
+# ==========================================
+users.json
+*.log
+app.log
+*.pid
+app.pid
+data/
+*.part
+*.tmp
+__pycache__/
+*.py[cod]
+.env
+.DS_Store

@@ -1,0 +1,72 @@
+# ==========================================
+# Credentials & Sensitive Configuration
+# ==========================================
+users.json
+*/users.json
+.env
+*.env
+*.env.local
+
+# ==========================================
+# Runtime Logs, PIDs, State
+# ==========================================
+*.log
+*.pid
+app.log
+app.pid
+*/app.log
+*/app.pid
+
+# ==========================================
+# Uploaded Data & Temp Upload Chunks
+# ==========================================
+data/
+*/data/
+*.part
+*.tmp
+
+# ==========================================
+# Python & Bytecode
+# ==========================================
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==========================================
+# Virtual Environments
+# ==========================================
+venv/
+.venv/
+env/
+ENV/
+venv.bak/
+
+# ==========================================
+# OS & IDE Junk
+# ==========================================
+.DS_Store
+Thumbs.db
+__MACOSX/
+*/__MACOSX/
+.idea/
+.vscode/
+*.swp
+*.swo
